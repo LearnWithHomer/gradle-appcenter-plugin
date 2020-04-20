@@ -46,11 +46,11 @@ class AppCenterUploader(
                         "reason=${commitResponse.errorBody()?.string()}"
             )
         } else {
-            println(
-                commitResponse.body()?.releaseId?.let { releaseId ->
-                    "AppCenter release url is ${RELEASE_URL_TEMPLATE.format(ownerName, appName, releaseId)}"
-                } ?: "Warning! Can't print releaseUrl - releaseId is null"
-            )
+            commitResponse.body()?.releaseId?.let { releaseId ->
+                val releaseUrl = RELEASE_URL_TEMPLATE.format(ownerName, appName, releaseId)
+                File("appcenter-release-url.txt").writeText(releaseUrl)
+                println("AppCenter release url is $releaseUrl")
+            } ?: println("Warning! Can't print releaseUrl - releaseId is null")
         }
 
         logger("Step 4/4 : Distribute Release")
