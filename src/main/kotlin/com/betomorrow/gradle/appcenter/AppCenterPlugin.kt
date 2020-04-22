@@ -44,18 +44,16 @@ class AppCenterPlugin : Plugin<Project> {
         }.firstOrNull { it != null } ?: appCenterExtension.findByBuildVariant(variant.name)
 
         appCenterApp?.let {
-            val signedPathDirectory = System.getenv("BITRISE_SIGNED_APK_PATH")?.let { path ->
-                File(path.substring(0, path.lastIndexOf("/")))
-            }
-            val outputDirectory = signedPathDirectory ?: variant.packageApplicationProvider.get().outputDirectory.get().asFile
+            val signedFile = System.getenv("BITRISE_SIGNED_APK_PATH")?.let { File(it) }
+            val outputDirectory = variant.packageApplicationProvider.get().outputDirectory.get().asFile
             val assembleTask = variant.assembleProvider.get()
 
             variant.outputs.all { output ->
                 if (output is ApkVariantOutput) {
-
+                    val fileProvider = signedFile ?: File(outputDirectory, output.outputFileName)
                     val filterIdentifiersCapitalized = output.filters.joinToString("") { it.identifier.capitalize() }
                     val taskSuffix = "${variant.name.capitalize()}$filterIdentifiersCapitalized"
-
+                    println("DEBUG: Set fileprovider to: ${fileProvider.path}")
                     val uploadTask = project.tasks.register(
                         "appCenterUpload$taskSuffix",
                         UploadAppCenterTask::class.java
@@ -68,7 +66,7 @@ class AppCenterPlugin : Plugin<Project> {
                         uploadTask.appName = appCenterApp.appName
                         uploadTask.distributionGroups = appCenterApp.distributionGroups
                         uploadTask.ownerName = appCenterApp.ownerName
-                        uploadTask.fileProvider = { File(outputDirectory, output.outputFileName) }
+                        uploadTask.fileProvider = { fileProvider }
                         uploadTask.releaseNotes = appCenterApp.releaseNotes
                         uploadTask.notifyTesters = appCenterApp.notifyTesters
 
