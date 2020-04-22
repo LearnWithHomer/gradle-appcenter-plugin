@@ -44,8 +44,10 @@ class AppCenterPlugin : Plugin<Project> {
         }.firstOrNull { it != null } ?: appCenterExtension.findByBuildVariant(variant.name)
 
         appCenterApp?.let {
-
-            val outputDirectory = variant.packageApplicationProvider.get().outputDirectory.get().asFile
+            val signedPathDirectory = System.getenv("BITRISE_SIGNED_APK_PATH")?.let { path ->
+                File(path.substring(0, path.lastIndexOf("/")))
+            }
+            val outputDirectory = signedPathDirectory ?: variant.packageApplicationProvider.get().outputDirectory.get().asFile
             val assembleTask = variant.assembleProvider.get()
 
             variant.outputs.all { output ->
