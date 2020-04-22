@@ -109,6 +109,7 @@ class AppCenterUploader(
     }
 
     private fun doUploadApk(uploadUrl: String, file: File, logger: (String) -> Unit): Call {
+        println("DEBUG: Are we using the correct file? ${file.path}")
         val body = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart(
