@@ -9,8 +9,31 @@ class AppCenterAPIFactory(
 ) {
 
     fun create(apiToken: String, debug: Boolean): AppCenterAPI {
+        val client = createHttpClient(debug, apiToken)
 
-        val builder = OkHttpBuilder(project)
+        val retrofit = Retrofit.Builder()
+            .baseUrl("https://api.appcenter.ms/v0.1/")
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        return retrofit.create(AppCenterAPI::class.java)
+    }
+
+    fun createUploadApi(uploadDomain: String, apiToken: String, debug: Boolean): UploadAPI {
+        val client = createHttpClient(debug, apiToken)
+
+        val retrofit = Retrofit.Builder()
+            .baseUrl(uploadDomain)
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        return retrofit.create(UploadAPI::class.java)
+    }
+
+    private fun createHttpClient(debug: Boolean, apiToken: String) =
+        OkHttpBuilder(project)
             .logger(debug)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
@@ -20,14 +43,5 @@ class AppCenterAPIFactory(
                     .build()
                 chain.proceed(request)
             }
-
-        val retrofit = Retrofit.Builder()
-            .baseUrl("https://api.appcenter.ms/v0.1/")
-            .client(builder.build())
-            .addConverterFactory(GsonConverterFactory.create())
             .build()
-
-        return retrofit.create(AppCenterAPI::class.java)
-    }
-
 }
