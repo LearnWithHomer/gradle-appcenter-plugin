@@ -15,9 +15,9 @@ interface AppCenterAPI {
      * --header 'Content-Type: application/json'
      * --header 'Accept: application/json'
      * --header 'X-API-Token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-     * 'https://api.appcenter.ms/v0.1/apps/{ownerName}/{appName}/release_uploads'
+     * 'https://api.appcenter.ms/v0.1/apps/{ownerName}/{appName}/uploads/releases/'
      */
-    @POST("apps/{ownerName}/{appName}/release_uploads")
+    @POST("apps/{ownerName}/{appName}/uploads/releases/")
     fun prepareReleaseUpload(
         @Path("ownerName") ownerName: String,
         @Path("appName") appName: String
@@ -29,9 +29,9 @@ interface AppCenterAPI {
      * --header 'Accept: application/json'
      * --header 'X-API-Token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
      * -d '{ "status": "committed"  }'
-     * 'https://api.appcenter.ms/v0.1/apps/{ownerName/{appName}/release_uploads/{upload_id}'
+     * 'https://api.appcenter.ms/v0.1/apps/{ownerName/{appName}/uploads/releases/{upload_id}'
      */
-    @PATCH("apps/{ownerName}/{appName}/release_uploads/{uploadId}")
+    @PATCH("apps/{ownerName}/{appName}/uploads/releases/{uploadId}")
     fun commitReleaseUpload(
         @Path("ownerName") ownerName: String,
         @Path("appName") appName: String,
