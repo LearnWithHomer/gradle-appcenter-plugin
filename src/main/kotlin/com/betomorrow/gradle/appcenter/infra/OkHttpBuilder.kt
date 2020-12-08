@@ -38,7 +38,7 @@ class OkHttpBuilder(
 
         if (logger) {
             val interceptor = HttpLoggingInterceptor()
-            interceptor.level = HttpLoggingInterceptor.Level.BODY
+            interceptor.level = HttpLoggingInterceptor.Level.BASIC
             builder.addInterceptor(interceptor)
         }
 

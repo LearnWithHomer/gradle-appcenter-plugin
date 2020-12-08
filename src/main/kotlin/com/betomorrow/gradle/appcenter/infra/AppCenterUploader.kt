@@ -8,10 +8,10 @@ import okhttp3.RequestBody
 import retrofit2.Response
 import java.io.File
 
-private const val RELEASE_URL_TEMPLATE = "https://appcenter.ms/orgs/%s/apps/%s/distribute/releases/%s"
-
 private const val CONTENT_TYPE_APK = "application/vnd.android.package-archive"
+
 private const val BACKOFF_DELAY = 1_000L
+private const val MAX_RETRIES = 60
 
 class AppCenterUploader(
     private val uploadApiFactory: (String) -> UploadAPI,
@@ -32,8 +32,6 @@ class AppCenterUploader(
             .bodyOrThrow()
 
         logger("Step 2/7 : Setting Metadata")
-        println(file.name)
-        println(file.length())
         val uploadApi = uploadApiFactory(preparedUpload.uploadDomain)
         val metadata = uploadApi.setMetadata(
             preparedUpload.packageAssetId,
@@ -43,14 +41,10 @@ class AppCenterUploader(
             CONTENT_TYPE_APK
         ).execute().bodyOrThrow()
 
-        logger("Step 3/7 : Upload Release chunks")
+        logger("Step 3/7 : Upload Release Chunks")
         metadata.chunkList.forEachIndexed { i, chunkId ->
             val range = (i * metadata.chunkSize)..((i + 1) * metadata.chunkSize)
             val chunk = ProgressRequestBody(file, range, "application/octet-stream")
-            println("i=$i")
-            println("chunkId=$chunkId")
-            println("chunkSize=${metadata.chunkSize}")
-            println("chunkList=${metadata.chunkList.joinToString()}")
             uploadApi.uploadChunk(
                 preparedUpload.packageAssetId,
                 chunkId,
@@ -65,15 +59,19 @@ class AppCenterUploader(
             preparedUpload.token
         ).execute().bodyOrThrow()
 
-        logger("Step 5/7 : Commit release")
+        logger("Step 5/7 : Commit Release")
         val commitRequest = CommitReleaseUploadRequest("uploadFinished")
-        val commitResult = apiClient.commitReleaseUpload(ownerName, appName, preparedUpload.id, commitRequest).execute().bodyOrThrow()
+        apiClient.commitReleaseUpload(ownerName, appName, preparedUpload.id, commitRequest).execute().bodyOrThrow()
 
-        logger("Step 6/7 : Fetching release Id")
+        logger("Step 6/7 : Fetching Release Id")
+        var requestCount = 0
         var uploadResult: GetUploadResponse?
         do {
             uploadResult = apiClient.getUpload(ownerName, appName, preparedUpload.id).execute().bodyOrThrow()
             Thread.sleep(BACKOFF_DELAY)
+            if (++requestCount >= MAX_RETRIES) {
+                throw AppCenterUploaderException("Fetching release id: Tried $requestCount times.")
+            }
         } while (uploadResult?.uploadStatus != "readyToBePublished")
 
         println("AppCenter release url is ${uploadResult.releaseUrl}")
@@ -85,7 +83,7 @@ class AppCenterUploader(
             notifyTesters = notifyTesters
         )
 
-        val distributeResponse = apiClient.distribute(ownerName, appName, uploadResult.releaseId!!, request).execute().bodyOrThrow()
+        apiClient.distribute(ownerName, appName, uploadResult.releaseId!!, request).execute().successOrThrow()
     }
 
     fun uploadSymbols(mappingFile: File, symbolType:String, versionName: String, versionCode: String, logger: (String) -> Unit) {
@@ -137,9 +135,11 @@ class AppCenterUploader(
     }
 }
 
-private fun <T> Response<T>.bodyOrThrow() =
+private fun <T> Response<T>.bodyOrThrow() = successOrThrow()!!
+
+private fun <T> Response<T>.successOrThrow() =
     if (isSuccessful) {
-        body()!!
+        body()
     } else {
         throw AppCenterUploaderException("Can't prepare release upload, code=${code()}, reason=${errorBody()?.string()}")
     }
