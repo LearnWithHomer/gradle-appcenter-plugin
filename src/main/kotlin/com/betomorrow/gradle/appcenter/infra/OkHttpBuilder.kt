@@ -38,7 +38,7 @@ class OkHttpBuilder(
 
         if (logger) {
             val interceptor = HttpLoggingInterceptor()
-            interceptor.level = HttpLoggingInterceptor.Level.BASIC
+            interceptor.level = HttpLoggingInterceptor.Level.BODY
             builder.addInterceptor(interceptor)
         }
 
@@ -75,5 +75,4 @@ class LambdaInterceptor(
     override fun intercept(chain: Interceptor.Chain): Response {
         return lambda(chain)
     }
-
 }

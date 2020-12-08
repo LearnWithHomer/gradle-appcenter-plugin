@@ -4,20 +4,19 @@ import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import okio.BufferedSink
-import okio.Source
+import okio.buffer
 import okio.source
 import java.io.File
 import java.io.IOException
 
-
 class ProgressRequestBody(
     private val file: File,
-    private val contentType: String,
-    private val listener: (Long, Long) -> Unit
+    private val range: LongRange,
+    private val contentType: String
 ) : RequestBody() {
 
-    private val contentLength : Long by lazy {
-        file.length()
+    private val contentLength: Long by lazy {
+        (range.last - range.first).coerceAtMost(file.length() - range.first)
     }
 
     override fun contentLength(): Long {
@@ -30,39 +29,17 @@ class ProgressRequestBody(
 
     @Throws(IOException::class)
     override fun writeTo(sink: BufferedSink) {
-        var source: Source? = null
-        try {
-            source = file.source()
-            if (source == null) {
-                return
-            }
-
-            var total: Long = 0
-            var read: Long = 0
-
-            while ({read = source.read(sink.buffer(),
-                    SEGMENT_SIZE
-                ); read}() != -1L) {
-                total += read
-                sink.flush()
-                this.listener(total, contentLength)
-            }
-        } finally {
-            // Copied from the okhttp3.internal.Util (version 3.12.x) because
-            // you shouldn't be using this internal namespace
-            if (source != null) {
-                try {
-                    source.close()
-                } catch (rethrown: RuntimeException) {
-                    throw rethrown
-                } catch (ignored: Exception) {
+        file.source().buffer().use { source ->
+            source.skip(range.first)
+            var total = 0L
+            while (total < contentLength) {
+                val read = source.read(sink.buffer, contentLength)
+                if (read >= 0) {
+                    total += read
+                } else {
+                    break
                 }
             }
         }
     }
-
-    companion object {
-        private val SEGMENT_SIZE : Long = 2048 // okio.Segment.SIZE
-    }
-
 }
