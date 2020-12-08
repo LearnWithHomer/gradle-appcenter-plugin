@@ -7,9 +7,10 @@ class AppCenterUploaderFactory(
 ) {
 
     fun create(apiToken: String, ownerName: String, appName: String): AppCenterUploader {
-        val api = AppCenterAPIFactory(project).create(apiToken, true)
-        val httpClient = OkHttpBuilder(project).logger(true).build()
-        return AppCenterUploader(api, httpClient, ownerName, appName)
+        val debug = true
+        val apiFactory = AppCenterAPIFactory(project)
+        val api = apiFactory.create(apiToken, debug)
+        val httpClient = OkHttpBuilder(project).logger(debug).build()
+        return AppCenterUploader({uploadDomain:String -> apiFactory.createUploadApi(uploadDomain, apiToken, debug)}, api, httpClient, ownerName, appName)
     }
-
 }

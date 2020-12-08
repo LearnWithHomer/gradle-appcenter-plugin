@@ -10,10 +10,18 @@ class AppCenterUploaderTest {
     @Ignore
     @Test
     fun testUploadApk() {
+        val debug = true
         val project = ProjectBuilder.builder().build()
-        val api = AppCenterAPIFactory(project).create(apiToken, true)
-        val httpClient = OkHttpBuilder(project).logger(true).build()
-        val uploader = AppCenterUploader(api, httpClient, ownerName, appName)
+        val apiFactory = AppCenterAPIFactory(project)
+        val api = apiFactory.create(apiToken, debug)
+        val httpClient = OkHttpBuilder(project).logger(debug).build()
+        val uploader = AppCenterUploader(
+            { uploadDomain: String -> apiFactory.createUploadApi(uploadDomain, apiToken, debug) },
+            api,
+            httpClient,
+            ownerName,
+            appName
+        )
 
         val file = File(apkPath)
         uploader.uploadApk(file, "newVersion", listOf("Sample Group", "Collaborators"), false)
