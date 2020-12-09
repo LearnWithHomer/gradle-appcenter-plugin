@@ -9,7 +9,7 @@ import retrofit2.Response
 import java.io.File
 
 private const val CONTENT_TYPE_APK = "application/vnd.android.package-archive"
-
+private const val RELEASE_URL_TEMPLATE = "https://appcenter.ms/orgs/%s/apps/%s/distribute/releases/%s"
 private const val BACKOFF_DELAY = 1_000L
 private const val MAX_RETRIES = 60
 
@@ -74,8 +74,9 @@ class AppCenterUploader(
             }
         } while (uploadResult?.uploadStatus != "readyToBePublished")
 
-        println("AppCenter release url is ${uploadResult.releaseUrl}")
-        uploadResult.releaseUrl?.let { File("appcenter-release-url.txt").writeText(it) }
+        val releaseUrl = RELEASE_URL_TEMPLATE.format(ownerName, appName, uploadResult.id)
+        File("appcenter-release-url.txt").writeText(releaseUrl)
+        println("AppCenter release url is $releaseUrl")
 
         logger("Step 7/7 : Distribute Release")
         val request = DistributeRequest(
