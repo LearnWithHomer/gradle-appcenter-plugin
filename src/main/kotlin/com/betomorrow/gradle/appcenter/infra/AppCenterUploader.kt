@@ -74,7 +74,7 @@ class AppCenterUploader(
             }
         } while (uploadResult?.uploadStatus != "readyToBePublished")
 
-        val releaseUrl = RELEASE_URL_TEMPLATE.format(ownerName, appName, uploadResult.id)
+        val releaseUrl = RELEASE_URL_TEMPLATE.format(ownerName, appName, uploadResult.releaseId)
         File("appcenter-release-url.txt").writeText(releaseUrl)
         println("AppCenter release url is $releaseUrl")
 
